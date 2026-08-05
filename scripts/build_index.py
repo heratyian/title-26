@@ -2,23 +2,21 @@ import json
 from pathlib import Path
 
 from langchain_core.documents import Document
-from langchain_chroma import Chroma
-from langchain_openai import OpenAIEmbeddings
+from dotenv import load_dotenv
 
-import title_26.config
+from title_26.vector_store import build_vector_store
 
 
 INPUT_PATH = Path("data/processed/usc26.jsonl")
-CHROMA_PATH = "chroma"
 
 
 def load_documents(path: Path) -> list[Document]:
+    """Load normalized JSONL records as LangChain documents."""
     documents = []
 
     with path.open(encoding="utf-8") as f:
         for line in f:
             record = json.loads(line)
-
             documents.append(
                 Document(
                     page_content=record["text"],
@@ -34,21 +32,13 @@ def load_documents(path: Path) -> list[Document]:
     return documents
 
 
-def main():
-    docs = load_documents(INPUT_PATH)
+def main() -> None:
+    """Build the persistent vector index from the normalized dataset."""
+    load_dotenv()
+    documents = load_documents(INPUT_PATH)
+    build_vector_store(documents)
 
-    embeddings = OpenAIEmbeddings(
-        model="text-embedding-3-small"
-    )
-
-    Chroma.from_documents(
-        documents=docs,
-        embedding=embeddings,
-        persist_directory=CHROMA_PATH,
-        collection_name="title_26",
-    )
-
-    print(f"Indexed {len(docs)} documents")
+    print(f"Indexed {len(documents)} documents")
 
 
 if __name__ == "__main__":

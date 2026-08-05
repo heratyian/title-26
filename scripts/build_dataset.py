@@ -9,23 +9,8 @@ INPUT_PATH = Path("data/raw/usc26.xml")
 OUTPUT_PATH = Path("data/processed/usc26.jsonl")
 
 
-def get_namespace(root: ET.Element) -> str:
-    """
-    Extract the namespace URI from a namespaced XML tag.
-
-    Example:
-        {http://xml.house.gov/schemas/uslm/1.0}uslm
-    """
-    if root.tag.startswith("{"):
-        return root.tag.split("}", 1)[0][1:]
-
-    return ""
-
-
 def clean_text(element: ET.Element | None) -> str:
-    """
-    Convert an XML element and its children into normalized text.
-    """
+    """Return normalized text from an XML element and its descendants."""
     if element is None:
         return ""
 
@@ -37,91 +22,44 @@ def clean_text(element: ET.Element | None) -> str:
 
 
 def parse_sections(xml_path: Path):
-    tree = ET.parse(xml_path)
-    root = tree.getroot()
-
-    namespace = get_namespace(root)
-
-    if namespace:
-        ns = {"uslm": namespace}
-        section_path = ".//uslm:section"
-        num_path = "uslm:num"
-        heading_path = "uslm:heading"
-    else:
-        ns = {}
-        section_path = ".//section"
-        num_path = "num"
-        heading_path = "heading"
-
-    sections = root.findall(section_path, ns)
-
-    print(f"Namespace: {namespace or '(none)'}")
+    """Yield normalized records for every section in a Title 26 USLM XML file."""
+    sections = ET.parse(xml_path).getroot().findall(".//{*}section")
     print(f"Sections found: {len(sections)}")
 
     for section in sections:
-        num = section.find(num_path, ns)
-        heading = section.find(heading_path, ns)
-
+        num = section.find("{*}num")
         if num is None:
             continue
 
-        raw_number = clean_text(num)
-
-        section_number = (
-            raw_number
-            .replace("§", "")
-            .strip()
-        )
-
+        section_number = clean_text(num).replace("§", "").strip()
         text = clean_text(section)
-
         if not text:
             continue
 
         yield {
             "title": 26,
             "section": section_number,
-            "heading": clean_text(heading) or None,
+            "heading": clean_text(section.find("{*}heading")) or None,
             "citation": f"26 U.S.C. § {section_number}",
             "text": text,
         }
 
 
 def main():
+    """Build the JSONL dataset from the configured Title 26 XML file."""
     if not INPUT_PATH.exists():
         raise FileNotFoundError(
-            f"Could not find {INPUT_PATH}. "
-            "Put the Title 26 XML file there first."
+            f"Could not find {INPUT_PATH}. Put the Title 26 XML file there first."
         )
 
-    OUTPUT_PATH.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    count = 0
-
-    with OUTPUT_PATH.open(
-        "w",
-        encoding="utf-8",
-    ) as output_file:
-
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with OUTPUT_PATH.open("w", encoding="utf-8") as output_file:
+        count = 0
         for record in parse_sections(INPUT_PATH):
-            output_file.write(
-                json.dumps(
-                    record,
-                    ensure_ascii=False,
-                )
-                + "\n"
-            )
-
+            output_file.write(json.dumps(record, ensure_ascii=False) + "\n")
             count += 1
 
-    print()
-    print(
-        f"Wrote {count} records to "
-        f"{OUTPUT_PATH}"
-    )
+    print(f"Wrote {count} records to {OUTPUT_PATH}")
 
 
 if __name__ == "__main__":

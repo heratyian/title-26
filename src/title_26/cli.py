@@ -1,12 +1,10 @@
-# cli.py
-
 import argparse
 
 from title_26.rag import Title26RAG
-import title_26.config
 
 
-def main():
+def main() -> None:
+    """Run the Title 26 command-line interface."""
     parser = argparse.ArgumentParser(
         description="Ask questions about Title 26."
     )
@@ -21,16 +19,11 @@ def main():
     rag = Title26RAG()
     result = rag.ask(args.question)
 
-    print()
-    print(result["answer"])
-
-    print("\nSources:")
+    print(f"\n{result['answer']}\n\nSources:")
 
     for source in result["sources"]:
-        print(
-            f"- {source['citation']} — "
-            f"{source.get('heading')}"
-        )
+        heading = f" — {source['heading']}" if source.get("heading") else ""
+        print(f"- {source['citation']}{heading}")
 
 
 if __name__ == "__main__":

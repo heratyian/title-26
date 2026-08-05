@@ -44,7 +44,7 @@ The XML is converted into a normalized JSONL dataset before being indexed.
 
 ## Requirements
 
-- Python 3.10+
+- Python 3.13+
 - [uv](https://docs.astral.sh/uv/)
 - An OpenAI API key
 

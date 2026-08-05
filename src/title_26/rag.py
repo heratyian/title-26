@@ -1,23 +1,35 @@
-# rag.py
-
+from dotenv import load_dotenv
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
-from title_26.prompts import PROMPT
-from title_26.retrieval import create_retriever
 from title_26.vector_store import load_vector_store
 
+
+PROMPT = ChatPromptTemplate.from_messages([
+    (
+        "system",
+        """
+        You are an educational assistant for exploring Title 26 of the United States Code.
+        Answer questions using only the supplied context. If the context is insufficient, say so.
+        Cite relevant sections using their U.S.C. citation. Do not present the response as professional tax advice.
+        """,
+    ),
+    ("human", "Context:\n\n{context}\n\nQuestion:\n\n{question}"),
+])
+
+
 class Title26RAG:
-    def __init__(self):
-        vector_store = load_vector_store()
+    """Answer questions using sections retrieved from the Title 26 index."""
 
-        self.retriever = create_retriever(vector_store)
-
-        self.llm = ChatOpenAI(
-            model="gpt-4.1-mini",
-            temperature=0,
+    def __init__(self) -> None:
+        load_dotenv()
+        self.retriever = load_vector_store().as_retriever(
+            search_kwargs={"k": 5},
         )
+        self.chain = PROMPT | ChatOpenAI(model="gpt-4.1-mini", temperature=0)
 
     def ask(self, question: str) -> dict:
+        """Return a grounded answer and the retrieved source citations."""
         docs = self.retriever.invoke(question)
 
         context = "\n\n".join(
@@ -27,9 +39,7 @@ class Title26RAG:
             for doc in docs
         )
 
-        chain = PROMPT | self.llm
-
-        response = chain.invoke({
+        response = self.chain.invoke({
             "context": context,
             "question": question,
         })

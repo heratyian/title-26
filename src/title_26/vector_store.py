@@ -1,51 +1,30 @@
-# vectorstore.py
-
-from pathlib import Path
-
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
+COLLECTION_NAME = "title_26"
+EMBEDDING_MODEL = "text-embedding-3-small"
+
 
 def build_vector_store(
-    chunks,
+    documents: list[Document],
     persist_directory: str = "chroma",
-):
-    documents = [
-        Document(
-            page_content=chunk.text,
-            metadata={
-                "citation": chunk.citation,
-                "section": chunk.section,
-                "section_title": chunk.section_title,
-                "subsection": chunk.subsection,
-                "chapter": chunk.chapter,
-                "subchapter": chunk.subchapter,
-            },
-        )
-        for chunk in chunks
-    ]
-
-    embeddings = OpenAIEmbeddings(
-        model="text-embedding-3-small"
-    )
-
+) -> Chroma:
+    """Embed documents and save them in a persistent Chroma collection."""
     return Chroma.from_documents(
         documents=documents,
-        embedding=embeddings,
+        embedding=OpenAIEmbeddings(model=EMBEDDING_MODEL),
         persist_directory=persist_directory,
-        collection_name="title_26",
+        collection_name=COLLECTION_NAME,
     )
+
 
 def load_vector_store(
     persist_directory: str = "chroma",
-):
-    embeddings = OpenAIEmbeddings(
-        model="text-embedding-3-small"
-    )
-
+) -> Chroma:
+    """Open the existing persistent Chroma collection."""
     return Chroma(
-        collection_name="title_26",
-        embedding_function=embeddings,
+        collection_name=COLLECTION_NAME,
+        embedding_function=OpenAIEmbeddings(model=EMBEDDING_MODEL),
         persist_directory=persist_directory,
     )
