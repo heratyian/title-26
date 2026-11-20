@@ -6,6 +6,8 @@ Title 26 uses retrieval-augmented generation (RAG) to answer questions using the
 
 > **Note:** This project is for educational purposes and is not intended to provide professional tax advice.
 
+[Demo](https://www.loom.com/share/7158673802c643ff9104024d28ad6144)
+
 ## How it works
 
 The project uses a simple RAG pipeline:
